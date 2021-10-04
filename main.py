@@ -3,6 +3,65 @@ from pprint import pprint
 import requests
 
 
+class YaUploader:
+    """
+    Класс для работы с Яндекс.Диск
+    Для решения Задачи №2
+    """
+    def __init__(self, token_ya: str):
+        """
+        :param token_ya: значение ТОКЕНА для доступа к Яндекс.Диск-у
+        """
+        self.token = token_ya
+
+    def get_headers(self):
+        """
+        Метод для формирования атрибута "headers" запроса
+        :return:
+        """
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': f'OAuth {self.token}'
+        }
+
+    def get_files_list(self):
+        """
+        Метод для получения списка файлов
+        :return:
+        """
+        url = 'https://cloud-api.yandex.net/v1/disk/resources/files'
+        headers = self.get_headers()
+        response = requests.get(url=url, headers=headers)
+        return response.json()
+
+    def _get_upload_link(self, disk_file_path):
+        """
+        Метод для получения ссылки для загрузки файла на Яндекс.Диск
+        :param disk_file_path: Путь к файлу на Яндекс.Диске
+        :return:
+        """
+        # disk_file_path - это путь к файлу на Яндекс.Диск-е
+        upload_url = "https://cloud-api.yandex.net/v1/disk/resources/upload"
+        headers = self.get_headers()
+        params = {"path": disk_file_path, "overwrite": "true"}
+        response = requests.get(upload_url, headers=headers, params=params)
+        return response.json()
+
+    def upload(self, file_path: str, file_to_disk):
+        """
+        Метод загружает файл на Яндекс.Диск
+        :param file_path: Путь к файлу на локальном дичке для загрузки на Яндекс.Диск
+        :param file_to_disk:  Путь к файлу на Яндекс.Диске
+        :return:
+        """
+        response = self._get_upload_link(file_to_disk)
+        download_link = response.get('href', '')
+        response = requests.put(url=download_link, data=open(file_path, 'rb'))
+        response.raise_for_status()
+        if response.status_code == 201:
+            print("Success")
+
+
 TOKEN = "2619421814940190"
 
 
@@ -35,3 +94,10 @@ def superhero_request(superheros):
 if __name__ == '__main__':
     print('Задача №1')
     print(superhero_request({'Hulk', "Captain America", 'Thanos'}))
+    print('Задача №2')
+    # Получить путь к загружаемому файлу и токен от пользователя
+    path_to_file = input('Введите путь к файлу: ')
+    path_to_disk = input('Введите путь для записи на Я.Диск: ')
+    token = input('Введите ТОКЕН: ')
+    uploader = YaUploader(token)
+    uploader.upload(path_to_file, path_to_disk)
