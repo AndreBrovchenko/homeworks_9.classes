@@ -1,6 +1,7 @@
 from pprint import pprint
 
 import requests
+import datetime
 
 
 class YaUploader:
@@ -91,6 +92,33 @@ def superhero_request(superheros):
     return f'Самый умный супергерой: {superhero_name}. \nЕго интеллект: {superhero_intelligence}'
 
 
+def get_list_questions(tag, page):
+    """
+    Список вопросов за последние два дня с определенным тегом
+    Для решения Задачи №3
+    :param tag: тег для фильтра вопросов
+    :param page: номер запрашиваемой страницы, т.к. данные возвращаются постранично
+    :return: Очередная страница с данными
+    """
+    url = 'https://api.stackexchange.com/2.3/questions'
+    current_date = datetime.datetime.today()
+    todate = str(int(current_date.timestamp()))
+    past_date = datetime.datetime.today() - datetime.timedelta(days=2)
+    fromdate = str(int(past_date.timestamp()))
+    params = {
+        "page": page,
+        "pagesize": "100",
+        "fromdate": fromdate,
+        "todate": todate,
+        "order": "desc",
+        "sort": "activity",
+        "tagged": tag,
+        "site": "stackoverflow"
+    }
+    response = requests.get(url=url, params=params, timeout=5)
+    return response.json()
+
+
 if __name__ == '__main__':
     print('Задача №1')
     print(superhero_request({'Hulk', "Captain America", 'Thanos'}))
@@ -101,3 +129,18 @@ if __name__ == '__main__':
     token = input('Введите ТОКЕН: ')
     uploader = YaUploader(token)
     uploader.upload(path_to_file, path_to_disk)
+    print('Задача №3')
+    number_page = 1
+    row = 0
+    questions = get_list_questions('python', number_page)
+    # цикл с таким условием не подходит, потому что вопросы с последней страницы не выводятся
+    # while questions['has_more']:
+    # пока список вопросов ['items'] на странице не пуст
+    while questions['items']:
+        print(f'Page: {number_page}')
+        for el in questions['items']:
+            row += 1
+            # print(el['title'])
+            print(f"{row}. {el['title']}")
+        number_page += 1
+        questions = get_list_questions('python', number_page)
